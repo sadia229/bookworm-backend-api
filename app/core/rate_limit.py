@@ -17,6 +17,15 @@ _buckets: dict[str, list[float]] = defaultdict(list)
 
 
 def _client_key(request: Request) -> str:
+    # Behind a proxy (e.g. Vercel), request.client.host is the proxy's IP and is
+    # identical for every visitor, which would make all clients share one bucket.
+    # Prefer the real client IP from X-Forwarded-For (first hop) when present.
+    forwarded = request.headers.get("x-forwarded-for")
+    if forwarded:
+        return forwarded.split(",")[0].strip()
+    real_ip = request.headers.get("x-real-ip")
+    if real_ip:
+        return real_ip.strip()
     if request.client:
         return request.client.host
     return "unknown"
