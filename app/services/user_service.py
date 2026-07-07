@@ -15,7 +15,11 @@ def _serialize_full(user: dict) -> dict:
         "avatar_id": user.get("avatar_id"),
         "avatar_url": user.get("avatar_url"),
         "gender": user.get("gender"),
-        "dob": user.get("dob").isoformat() if hasattr(user.get("dob"), "isoformat") else user.get("dob"),
+        "dob": (
+            user.get("dob").isoformat()
+            if hasattr(user.get("dob"), "isoformat")
+            else user.get("dob")
+        ),
         "reading_preferences": user.get("reading_preferences") or [],
         "points": user["points"],
         "books_completed": user["books_completed"],

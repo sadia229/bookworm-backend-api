@@ -6,6 +6,7 @@ entitlement, so the client's purchase payload is never trusted.
 """
 
 import logging
+from datetime import UTC
 
 import httpx
 
@@ -53,8 +54,8 @@ def fetch_premium_status(user_id: str) -> tuple[bool, str | None]:
     if expires is None:
         return True, None
 
-    from datetime import datetime, timezone
+    from datetime import datetime
 
     expires_dt = parse_dt(expires)
-    is_active = expires_dt > datetime.now(timezone.utc)
+    is_active = expires_dt > datetime.now(UTC)
     return is_active, parse_dt(expires).isoformat().replace("+00:00", "Z")

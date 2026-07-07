@@ -1,6 +1,6 @@
 import hashlib
 import secrets
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 from app.core.exceptions import BadRequestError, ConflictError, UnauthorizedError
 from app.core.security import (
@@ -118,7 +118,7 @@ def request_password_reset(email: str) -> None:
 
     token = secrets.token_urlsafe(32)
     token_hash = hashlib.sha256(token.encode("utf-8")).hexdigest()
-    expires_at = datetime.now(timezone.utc) + timedelta(minutes=30)
+    expires_at = datetime.now(UTC) + timedelta(minutes=30)
     repos.password_resets.create(user["id"], token_hash, expires_at.isoformat())
     # Delivery (email/SMS) is out of scope for this backend; the raw `token`
     # would be sent via a transactional email provider here.
@@ -130,7 +130,7 @@ def confirm_password_reset(token: str, new_password: str) -> None:
     row = repos.password_resets.get_by_hash(token_hash)
     if not row or row["used"]:
         raise BadRequestError("This reset link is invalid or has expired")
-    if parse_dt(row["expires_at"]) < datetime.now(timezone.utc):
+    if parse_dt(row["expires_at"]) < datetime.now(UTC):
         raise BadRequestError("This reset link is invalid or has expired")
 
     repos.password_resets.mark_used(row["id"])

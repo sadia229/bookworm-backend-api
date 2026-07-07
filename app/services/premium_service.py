@@ -7,7 +7,7 @@ Two entry points, per api-doc.md v1.1:
 """
 
 import logging
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from app.config import get_settings
 from app.core.exceptions import BadGatewayError, UnauthorizedError
@@ -36,7 +36,7 @@ def _verify_secret(authorization: str | None) -> None:
 def _premium_until_iso(expiration_at_ms: int | None) -> str | None:
     if not expiration_at_ms:
         return None
-    dt = datetime.fromtimestamp(expiration_at_ms / 1000, tz=timezone.utc)
+    dt = datetime.fromtimestamp(expiration_at_ms / 1000, tz=UTC)
     return dt.isoformat().replace("+00:00", "Z")
 
 

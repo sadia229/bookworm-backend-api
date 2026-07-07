@@ -1,5 +1,5 @@
 import uuid
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from typing import Any
 
 import bcrypt
@@ -33,7 +33,7 @@ def decode_token(token: str) -> dict:
 def create_access_token(user_id: str) -> tuple[str, int]:
     settings = get_settings()
     expires_in = settings.access_token_expire_minutes * 60
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     payload = {
         "sub": user_id,
         "type": "access",
@@ -46,7 +46,7 @@ def create_access_token(user_id: str) -> tuple[str, int]:
 def create_refresh_token(user_id: str, family_id: str | None = None) -> tuple[str, dict[str, Any]]:
     """Returns (token, meta) where meta has jti/family_id/expires_at for the DB row."""
     settings = get_settings()
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     jti = str(uuid.uuid4())
     family = family_id or str(uuid.uuid4())
     expires_at = now + timedelta(days=settings.refresh_token_expire_days)

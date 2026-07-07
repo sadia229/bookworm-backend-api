@@ -7,7 +7,7 @@ real behavior without needing a live database.
 
 import uuid
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any
 
 from app.core.exceptions import ConflictError, ForbiddenError, NotFoundError
@@ -23,7 +23,7 @@ def world_stage_for(books_completed: int) -> int:
 
 
 def _now() -> datetime:
-    return datetime.now(timezone.utc)
+    return datetime.now(UTC)
 
 
 def _new_id() -> str:

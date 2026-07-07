@@ -1,16 +1,16 @@
 import re
-from datetime import date, datetime, timezone
-from enum import Enum
+from datetime import UTC, date, datetime
+from enum import StrEnum
 
 
-class Gender(str, Enum):
+class Gender(StrEnum):
     male = "male"
     female = "female"
     other = "other"
     prefer_not_to_say = "prefer_not_to_say"
 
 
-class Genre(str, Enum):
+class Genre(StrEnum):
     fiction = "fiction"
     nonfiction = "nonfiction"
     sci_fi = "sci-fi"
@@ -25,18 +25,18 @@ class Genre(str, Enum):
     other = "other"
 
 
-class BookStatus(str, Enum):
+class BookStatus(StrEnum):
     currently_reading = "currently_reading"
     already_read = "already_read"
 
 
-class NotificationPlatform(str, Enum):
+class NotificationPlatform(StrEnum):
     android = "android"
     ios = "ios"
     web = "web"
 
 
-class LeaderboardPeriod(str, Enum):
+class LeaderboardPeriod(StrEnum):
     all_time = "all_time"
     weekly = "weekly"
 
@@ -58,7 +58,7 @@ def validate_password_strength(password: str) -> str:
 
 
 def validate_dob(value: date) -> date:
-    today = datetime.now(timezone.utc).date()
+    today = datetime.now(UTC).date()
     if value > today:
         raise ValueError("dob cannot be in the future")
     age_days = (today - value).days
@@ -69,7 +69,7 @@ def validate_dob(value: date) -> date:
 
 def validate_not_future(value: datetime) -> datetime:
     if value.tzinfo is None:
-        value = value.replace(tzinfo=timezone.utc)
-    if value > datetime.now(timezone.utc):
+        value = value.replace(tzinfo=UTC)
+    if value > datetime.now(UTC):
         raise ValueError("timestamp cannot be in the future")
     return value

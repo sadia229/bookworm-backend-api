@@ -1,4 +1,4 @@
-from datetime import date, datetime, timedelta, timezone
+from datetime import UTC, date, datetime, timedelta
 
 from app.core.exceptions import ValidationAppError
 from app.core.timeutils import iso, parse_dt
@@ -35,7 +35,9 @@ def log_progress(user_id: str, book_id: str, payload: LogProgressRequest) -> dic
     }
 
 
-def book_progress_history(user_id: str, book_id: str, page: int, size: int) -> tuple[list[dict], int]:
+def book_progress_history(
+    user_id: str, book_id: str, page: int, size: int
+) -> tuple[list[dict], int]:
     from app.services.book_service import get_owned_book  # local import avoids a cycle
 
     repos = get_repositories()
@@ -88,7 +90,7 @@ def activity_window(
     user_id: str, date_from: date | None, date_to: date | None, group_by: str
 ) -> dict:
     repos = get_repositories()
-    today = datetime.now(timezone.utc).date()
+    today = datetime.now(UTC).date()
     d_to = date_to or today
     d_from = date_from or (d_to - timedelta(days=6))
 

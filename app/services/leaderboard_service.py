@@ -1,7 +1,9 @@
 from app.db.container import get_repositories
 
 
-def get_leaderboard(user_id: str, period: str, page: int, size: int) -> tuple[dict, list[dict], int]:
+def get_leaderboard(
+    user_id: str, period: str, page: int, size: int
+) -> tuple[dict, list[dict], int]:
     repos = get_repositories()
     offset = (page - 1) * size
     rows, total = repos.users.list_leaderboard(period, size, offset)

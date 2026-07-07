@@ -11,7 +11,9 @@ router = APIRouter(tags=["Books"])
 
 
 @router.post("/books")
-def create_book(payload: CreateBookRequest, user_id: str = Depends(get_current_user_id)) -> JSONResponse:
+def create_book(
+    payload: CreateBookRequest, user_id: str = Depends(get_current_user_id)
+) -> JSONResponse:
     data = book_service.create_book(user_id, payload)
     return JSONResponse(status_code=201, content=success(data, "Book added to your library"))
 

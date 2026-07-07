@@ -45,7 +45,9 @@ def list_bookmarks(user_id: str, page: int, size: int) -> tuple[list[dict], int]
                 "created_at": iso(row["created_at"]),
                 "owner": {
                     "id": owner["id"],
-                    "display_name": "Anonymous Reader" if owner["name_hidden"] else owner["display_name"],
+                    "display_name": (
+                        "Anonymous Reader" if owner["name_hidden"] else owner["display_name"]
+                    ),
                     "avatar_id": owner.get("avatar_id"),
                 },
                 "book": {

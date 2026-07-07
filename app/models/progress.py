@@ -1,5 +1,5 @@
 from datetime import datetime
-from enum import Enum
+from enum import StrEnum
 
 from pydantic import BaseModel, Field, field_validator
 
@@ -17,7 +17,7 @@ class LogProgressRequest(BaseModel):
         return validate_not_future(v) if v else v
 
 
-class GroupBy(str, Enum):
+class GroupBy(StrEnum):
     day = "day"
     week = "week"
     month = "month"

@@ -53,7 +53,9 @@ def get_world(user_id: str) -> dict:
     next_threshold = None
     if nxt:
         span = nxt["threshold"] - current["threshold"]
-        progress_to_next = round((books_completed - current["threshold"]) / span, 4) if span else 1.0
+        progress_to_next = (
+            round((books_completed - current["threshold"]) / span, 4) if span else 1.0
+        )
         books_to_next_stage = nxt["threshold"] - books_completed
         next_threshold = nxt["threshold"]
 

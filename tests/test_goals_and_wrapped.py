@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 
 def _create_book(client, auth, **overrides):
@@ -110,7 +110,7 @@ def test_wrapped_current_month(client, auth):
     resp = client.get("/api/v1/stats/wrapped", headers=auth["headers"])
     assert resp.status_code == 200
     data = resp.json()["data"]
-    month = datetime.now(timezone.utc).strftime("%Y-%m")
+    month = datetime.now(UTC).strftime("%Y-%m")
     assert data["month"] == month
     assert data["books_finished"] == 1
     assert data["pages_read"] == 40
