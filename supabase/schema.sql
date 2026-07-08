@@ -168,6 +168,37 @@ create index if not exists idx_notifications_user on public.notifications (user_
 create index if not exists idx_notifications_user_unread on public.notifications (user_id) where is_read = false;
 
 -- ---------------------------------------------------------------------------
+-- quotes -- admin-curated rotating quotes for the home carousel (public read)
+-- ---------------------------------------------------------------------------
+create table if not exists public.quotes (
+  id text primary key default gen_random_uuid()::text,
+  text text not null,
+  author text,
+  category text check (category in ('Motivation', 'Romance', 'Sci-Fi')),
+  is_active boolean not null default true,
+  sort_order integer not null default 0,
+  created_at timestamptz not null default now()
+);
+
+create index if not exists idx_quotes_active on public.quotes (is_active, category);
+
+-- ---------------------------------------------------------------------------
+-- summaries -- admin-curated / reader-contributed book summaries (public read)
+-- ---------------------------------------------------------------------------
+create table if not exists public.summaries (
+  id text primary key default gen_random_uuid()::text,
+  title text not null,
+  author text,
+  cover text,                       -- optional emoji fallback
+  description text not null,
+  contributor text not null default 'Editor',
+  is_active boolean not null default true,
+  created_at timestamptz not null default now()
+);
+
+create index if not exists idx_summaries_active on public.summaries (is_active, created_at desc);
+
+-- ---------------------------------------------------------------------------
 -- RLS: enabled with no permissive policies -- only service_role (used by the
 -- backend) bypasses RLS. anon/authenticated (PostgREST direct access) get
 -- nothing, since all access must go through the FastAPI backend.
@@ -181,6 +212,8 @@ alter table public.bookmarks enable row level security;
 alter table public.device_tokens enable row level security;
 alter table public.notifications enable row level security;
 alter table public.processed_webhook_events enable row level security;
+alter table public.quotes enable row level security;
+alter table public.summaries enable row level security;
 
 -- ---------------------------------------------------------------------------
 -- Leaderboard views -- weekly finish counts + a users+weekly join used by the
@@ -370,3 +403,19 @@ begin
   );
 end;
 $$;
+
+-- ---------------------------------------------------------------------------
+-- Seed content (idempotent) -- starter quotes + summaries so the home carousel
+-- and Summary tab are populated on a fresh database. Safe to re-run.
+-- ---------------------------------------------------------------------------
+insert into public.quotes (id, text, author, category, sort_order) values
+  ('q_001', 'A reader lives a thousand lives before he dies.', 'George R.R. Martin', 'Motivation', 1),
+  ('q_002', 'We loved with a love that was more than love.', 'Edgar Allan Poe', 'Romance', 2),
+  ('q_003', 'The universe is under no obligation to make sense to you.', 'Neil deGrasse Tyson', 'Sci-Fi', 3),
+  ('q_004', 'Today a reader, tomorrow a leader.', 'Margaret Fuller', 'Motivation', 4)
+on conflict (id) do nothing;
+
+insert into public.summaries (id, title, author, cover, description, contributor) values
+  ('s_001', 'Atomic Habits', 'James Clear', '⚛️', 'A practical framework for improving every day through tiny 1% changes that compound into remarkable results.', 'Editor'),
+  ('s_002', 'Deep Work', 'Cal Newport', '🧠', 'Rules for focused success in a distracted world — how to cultivate the ability to concentrate without distraction.', 'Editor')
+on conflict (id) do nothing;

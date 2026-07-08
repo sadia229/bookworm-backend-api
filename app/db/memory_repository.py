@@ -14,6 +14,26 @@ from app.core.exceptions import ConflictError, ForbiddenError, NotFoundError
 
 _THRESHOLDS = [(100, 5), (50, 4), (30, 3), (15, 2), (5, 1), (0, 0)]
 
+# Starter admin-curated content (mirrors the seed rows in supabase/schema.sql).
+_SEED_QUOTES = [
+    {"id": "q_001", "text": "A reader lives a thousand lives before he dies.",
+     "author": "George R.R. Martin", "category": "Motivation", "sort_order": 1},
+    {"id": "q_002", "text": "We loved with a love that was more than love.",
+     "author": "Edgar Allan Poe", "category": "Romance", "sort_order": 2},
+    {"id": "q_003", "text": "The universe is under no obligation to make sense to you.",
+     "author": "Neil deGrasse Tyson", "category": "Sci-Fi", "sort_order": 3},
+    {"id": "q_004", "text": "Today a reader, tomorrow a leader.",
+     "author": "Margaret Fuller", "category": "Motivation", "sort_order": 4},
+]
+_SEED_SUMMARIES = [
+    {"id": "s_001", "title": "Atomic Habits", "author": "James Clear", "cover": "⚛️",
+     "description": "A practical framework for improving every day through tiny 1% changes.",
+     "contributor": "Editor"},
+    {"id": "s_002", "title": "Deep Work", "author": "Cal Newport", "cover": "🧠",
+     "description": "Rules for focused success in a distracted world.",
+     "contributor": "Editor"},
+]
+
 
 def world_stage_for(books_completed: int) -> int:
     for threshold, stage in _THRESHOLDS:
@@ -41,6 +61,8 @@ class MemoryStore:
     refresh_tokens: dict[str, dict[str, Any]] = field(default_factory=dict)
     password_reset_tokens: dict[str, dict[str, Any]] = field(default_factory=dict)
     webhook_events: set[str] = field(default_factory=set)
+    quotes: list[dict[str, Any]] = field(default_factory=lambda: list(_SEED_QUOTES))
+    summaries: list[dict[str, Any]] = field(default_factory=lambda: list(_SEED_SUMMARIES))
 
 
 class MemoryUserRepository:
@@ -614,3 +636,19 @@ class MemoryWebhookEventRepository:
 
     def mark_processed(self, event_id: str) -> None:
         self.store.webhook_events.add(event_id)
+
+
+class MemoryContentRepository:
+    def __init__(self, store: MemoryStore) -> None:
+        self.store = store
+
+    def list_quotes(self, category: str | None, limit: int) -> list[dict[str, Any]]:
+        rows = [dict(q) for q in self.store.quotes if category is None or q["category"] == category]
+        rows.sort(key=lambda q: q.get("sort_order", 0))
+        return rows[:limit]
+
+    def list_summaries(self, page: int, size: int) -> tuple[list[dict[str, Any]], int]:
+        rows = [dict(s) for s in self.store.summaries]
+        total = len(rows)
+        offset = (page - 1) * size
+        return rows[offset : offset + size], total

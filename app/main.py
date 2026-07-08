@@ -12,6 +12,7 @@ from app.routers import (
     auth,
     bookmarks,
     books,
+    content,
     leaderboard,
     notifications,
     premium,
@@ -48,6 +49,7 @@ for router in (
     stats.router,
     notifications.router,
     premium.router,
+    content.router,
 ):
     api_v1.include_router(router)
 

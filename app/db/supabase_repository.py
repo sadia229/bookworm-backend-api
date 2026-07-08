@@ -488,6 +488,33 @@ class SupabasePasswordResetRepository:
         ).execute()
 
 
+class SupabaseContentRepository:
+    def list_quotes(self, category: str | None, limit: int) -> list[dict[str, Any]]:
+        query = (
+            get_supabase()
+            .table("quotes")
+            .select("*")
+            .eq("is_active", True)
+        )
+        if category:
+            query = query.eq("category", category)
+        res = query.order("sort_order").limit(limit).execute()
+        return res.data
+
+    def list_summaries(self, page: int, size: int) -> tuple[list[dict[str, Any]], int]:
+        offset = (page - 1) * size
+        res = (
+            get_supabase()
+            .table("summaries")
+            .select("*", count="exact")
+            .eq("is_active", True)
+            .order("created_at", desc=True)
+            .range(offset, offset + size - 1)
+            .execute()
+        )
+        return res.data, res.count or 0
+
+
 class SupabaseWebhookEventRepository:
     def was_processed(self, event_id: str) -> bool:
         res = (
