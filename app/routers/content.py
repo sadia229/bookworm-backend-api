@@ -1,8 +1,9 @@
-from fastapi import APIRouter, Query
+from fastapi import APIRouter, Depends, Query
 from fastapi.responses import JSONResponse
 
 from app.core.envelope import success
-from app.models.content import QuoteCategory
+from app.deps import require_admin
+from app.models.content import CreateSummaryRequest, QuoteCategory
 from app.services import content_service
 
 router = APIRouter(tags=["Content"])
@@ -24,3 +25,9 @@ def list_summaries(
 ) -> JSONResponse:
     data = content_service.get_summaries(page, size)
     return JSONResponse(status_code=200, content=success(data, "Summaries retrieved"))
+
+
+@router.post("/summaries", dependencies=[Depends(require_admin)])
+def create_summary(payload: CreateSummaryRequest) -> JSONResponse:
+    data = content_service.create_summary(payload.model_dump())
+    return JSONResponse(status_code=201, content=success(data, "Summary created"))

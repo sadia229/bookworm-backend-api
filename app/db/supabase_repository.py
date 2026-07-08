@@ -48,6 +48,24 @@ class SupabaseUserRepository:
         res = get_supabase().table("users").select("*").eq("email", email.lower()).execute()
         return res.data[0] if res.data else None
 
+    def list_all_ids(self) -> list[str]:
+        res = get_supabase().table("users").select("id").execute()
+        return [row["id"] for row in res.data]
+
+    def list_ids_with_birthday(self, month: int, day: int) -> list[str]:
+        # PostgREST can't filter on extract(month/day); fetch dob and match here.
+        res = get_supabase().table("users").select("id, dob").not_.is_("dob", "null").execute()
+        ids = []
+        for row in res.data:
+            dob = str(row.get("dob") or "")
+            if len(dob) >= 10 and int(dob[5:7]) == month and int(dob[8:10]) == day:
+                ids.append(row["id"])
+        return ids
+
+    def list_ids_created_before(self, iso: str) -> list[str]:
+        res = get_supabase().table("users").select("id").lt("created_at", iso).execute()
+        return [row["id"] for row in res.data]
+
     def update(self, user_id: str, fields: dict[str, Any]) -> dict[str, Any] | None:
         res = get_supabase().table("users").update(fields).eq("id", user_id).execute()
         return res.data[0] if res.data else None
@@ -252,6 +270,16 @@ class SupabaseReadingSessionRepository:
         )
         return res.data
 
+    def user_ids_active_since(self, iso: str) -> set[str]:
+        res = (
+            get_supabase()
+            .table("reading_sessions")
+            .select("user_id")
+            .gte("date", iso)
+            .execute()
+        )
+        return {row["user_id"] for row in res.data}
+
 
 class SupabaseBookmarkRepository:
     def create(self, user_id: str, book_id: str) -> dict[str, Any]:
@@ -348,6 +376,18 @@ class SupabaseDeviceTokenRepository:
         )
         return [row["token"] for row in res.data]
 
+    def list_tokens_for_users(self, user_ids: list[str]) -> list[str]:
+        if not user_ids:
+            return []
+        res = (
+            get_supabase()
+            .table("device_tokens")
+            .select("token")
+            .in_("user_id", user_ids)
+            .execute()
+        )
+        return [row["token"] for row in res.data]
+
 
 class SupabaseNotificationRepository:
     def create(
@@ -368,6 +408,23 @@ class SupabaseNotificationRepository:
             .execute()
         )
         return res.data[0]
+
+    def create_bulk(
+        self, user_ids: list[str], title: str, body: str, image_url: str | None, data: dict
+    ) -> int:
+        if not user_ids:
+            return 0
+        rows = [
+            {"user_id": uid, "title": title, "body": body, "image_url": image_url, "data": data}
+            for uid in user_ids
+        ]
+        # Chunk to keep each insert payload well within PostgREST limits.
+        inserted = 0
+        for i in range(0, len(rows), 500):
+            chunk = rows[i : i + 500]
+            get_supabase().table("notifications").insert(chunk).execute()
+            inserted += len(chunk)
+        return inserted
 
     def get_by_id(self, notification_id: str) -> dict[str, Any] | None:
         res = (
@@ -513,6 +570,17 @@ class SupabaseContentRepository:
             .execute()
         )
         return res.data, res.count or 0
+
+    def create_summary(self, fields: dict[str, Any]) -> dict[str, Any]:
+        payload = {
+            "title": fields["title"],
+            "author": fields.get("author"),
+            "cover": fields.get("cover"),
+            "description": fields["description"],
+            "contributor": fields.get("contributor") or "Editor",
+        }
+        res = get_supabase().table("summaries").insert(payload).execute()
+        return res.data[0]
 
 
 class SupabaseWebhookEventRepository:

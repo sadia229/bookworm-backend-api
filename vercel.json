@@ -5,5 +5,9 @@
   ],
   "rewrites": [
     { "source": "/(.*)", "destination": "/api/index.py" }
+  ],
+  "crons": [
+    { "path": "/api/v1/cron/birthday-wishes", "schedule": "0 9 * * *" },
+    { "path": "/api/v1/cron/forest-nudge", "schedule": "0 10 * * 1" }
   ]
 }

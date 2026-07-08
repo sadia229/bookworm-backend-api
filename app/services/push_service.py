@@ -48,12 +48,16 @@ def send_push(tokens: list[str], title: str, body: str, data: dict | None = None
 
     from firebase_admin import messaging
 
-    message = messaging.MulticastMessage(
-        notification=messaging.Notification(title=title, body=body),
-        data={str(k): str(v) for k, v in (data or {}).items()},
-        tokens=tokens,
-    )
-    try:
-        messaging.send_each_for_multicast(message)
-    except Exception:
-        logger.exception("Failed to send FCM push notification")
+    payload_data = {str(k): str(v) for k, v in (data or {}).items()}
+    # FCM multicast accepts at most 500 tokens per call; chunk for broadcasts.
+    for i in range(0, len(tokens), 500):
+        chunk = tokens[i : i + 500]
+        message = messaging.MulticastMessage(
+            notification=messaging.Notification(title=title, body=body),
+            data=payload_data,
+            tokens=chunk,
+        )
+        try:
+            messaging.send_each_for_multicast(message)
+        except Exception:
+            logger.exception("Failed to send FCM push notification")

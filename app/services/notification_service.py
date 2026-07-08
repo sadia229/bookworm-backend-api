@@ -81,3 +81,25 @@ def notify_and_push(
     repos.notifications.create(user_id, title, body, image_url, data or {})
     tokens = repos.device_tokens.list_tokens_for_user(user_id)
     push_service.send_push(tokens, title, body, data)
+
+
+def notify_users(
+    user_ids: list[str],
+    title: str,
+    body: str,
+    data: dict | None = None,
+    image_url: str | None = None,
+) -> int:
+    """Fan out one notification to many users: persist a row per user, then push.
+
+    Returns the number of users notified. Used by the admin summary broadcast and
+    the scheduled birthday / forest-nudge jobs so every delivered push also has a
+    saved history row.
+    """
+    if not user_ids:
+        return 0
+    repos = get_repositories()
+    count = repos.notifications.create_bulk(user_ids, title, body, image_url, data or {})
+    tokens = repos.device_tokens.list_tokens_for_users(user_ids)
+    push_service.send_push(tokens, title, body, data)
+    return count

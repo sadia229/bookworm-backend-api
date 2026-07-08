@@ -13,6 +13,7 @@ from app.routers import (
     bookmarks,
     books,
     content,
+    cron,
     leaderboard,
     notifications,
     premium,
@@ -50,6 +51,7 @@ for router in (
     notifications.router,
     premium.router,
     content.router,
+    cron.router,
 ):
     api_v1.include_router(router)
 

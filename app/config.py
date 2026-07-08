@@ -25,6 +25,12 @@ class Settings(BaseSettings):
     revenuecat_api_key: str = ""
     revenuecat_entitlement_id: str = "premium"
 
+    # --- Admin & scheduled jobs (v1.2 notifications) ---
+    # Shared key to authorize admin writes (e.g. POST /summaries), and the secret
+    # Vercel Cron sends in the Authorization header for scheduled endpoints.
+    admin_api_key: str = ""
+    cron_secret: str = ""
+
     cors_origins: str = "*"
     environment: str = "development"
 

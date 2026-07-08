@@ -50,6 +50,26 @@ def _new_id() -> str:
     return str(uuid.uuid4())
 
 
+def _as_dt(value: Any) -> datetime:
+    if isinstance(value, datetime):
+        return value if value.tzinfo else value.replace(tzinfo=UTC)
+    return _parse_dt(str(value))
+
+
+def _parse_dt(value: str) -> datetime:
+    dt = datetime.fromisoformat(str(value).replace("Z", "+00:00"))
+    return dt if dt.tzinfo else dt.replace(tzinfo=UTC)
+
+
+def _parse_date(value: str):
+    from datetime import date
+
+    try:
+        return date.fromisoformat(str(value)[:10])
+    except ValueError:
+        return None
+
+
 @dataclass
 class MemoryStore:
     users: dict[str, dict[str, Any]] = field(default_factory=dict)
@@ -110,6 +130,28 @@ class MemoryUserRepository:
             if row["email"] == email.lower():
                 return dict(row)
         return None
+
+    def list_all_ids(self) -> list[str]:
+        return list(self.store.users.keys())
+
+    def list_ids_with_birthday(self, month: int, day: int) -> list[str]:
+        ids = []
+        for row in self.store.users.values():
+            dob = row.get("dob")
+            if not dob:
+                continue
+            d = dob if hasattr(dob, "month") else _parse_date(dob)
+            if d and d.month == month and d.day == day:
+                ids.append(row["id"])
+        return ids
+
+    def list_ids_created_before(self, iso: str) -> list[str]:
+        cutoff = _parse_dt(iso)
+        return [
+            row["id"]
+            for row in self.store.users.values()
+            if _as_dt(row["created_at"]) < cutoff
+        ]
 
     def update(self, user_id: str, fields: dict[str, Any]) -> dict[str, Any] | None:
         row = self.store.users.get(user_id)
@@ -422,6 +464,12 @@ class MemoryReadingSessionRepository:
         rows.sort(key=lambda r: r["date"])
         return rows
 
+    def user_ids_active_since(self, iso: str) -> set[str]:
+        cutoff = _parse_dt(iso)
+        return {
+            r["user_id"] for r in self.store.sessions.values() if _as_dt(r["date"]) >= cutoff
+        }
+
 
 class MemoryBookmarkRepository:
     def __init__(self, store: MemoryStore) -> None:
@@ -501,6 +549,10 @@ class MemoryDeviceTokenRepository:
     def list_tokens_for_user(self, user_id: str) -> list[str]:
         return [t for t, r in self.store.device_tokens.items() if r["user_id"] == user_id]
 
+    def list_tokens_for_users(self, user_ids: list[str]) -> list[str]:
+        wanted = set(user_ids)
+        return [t for t, r in self.store.device_tokens.items() if r["user_id"] in wanted]
+
 
 class MemoryNotificationRepository:
     def __init__(self, store: MemoryStore) -> None:
@@ -522,6 +574,13 @@ class MemoryNotificationRepository:
         }
         self.store.notifications[notification_id] = row
         return dict(row)
+
+    def create_bulk(
+        self, user_ids: list[str], title: str, body: str, image_url: str | None, data: dict
+    ) -> int:
+        for uid in user_ids:
+            self.create(uid, title, body, image_url, data)
+        return len(user_ids)
 
     def get_by_id(self, notification_id: str) -> dict[str, Any] | None:
         row = self.store.notifications.get(notification_id)
@@ -648,7 +707,19 @@ class MemoryContentRepository:
         return rows[:limit]
 
     def list_summaries(self, page: int, size: int) -> tuple[list[dict[str, Any]], int]:
-        rows = [dict(s) for s in self.store.summaries]
+        rows = [dict(s) for s in reversed(self.store.summaries)]
         total = len(rows)
         offset = (page - 1) * size
         return rows[offset : offset + size], total
+
+    def create_summary(self, fields: dict[str, Any]) -> dict[str, Any]:
+        row = {
+            "id": fields.get("id") or _new_id(),
+            "title": fields["title"],
+            "author": fields.get("author"),
+            "cover": fields.get("cover"),
+            "description": fields["description"],
+            "contributor": fields.get("contributor") or "Editor",
+        }
+        self.store.summaries.append(row)
+        return dict(row)
